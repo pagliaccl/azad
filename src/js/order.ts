@@ -879,7 +879,8 @@ function getOrdersForYearAndQueryTemplate(
             console.error(msg);
             throw(msg);
         }
-        const expected_order_count: number = parseInt( splits[0], 10 );
+        // const expected_order_count: number = parseInt( splits[0], 10 );
+        const expected_order_count: number = Math.min(parseInt( splits[0], 10 ), 100);
         console.log(
             'Found ' + expected_order_count + ' orders for ' + year
         );
