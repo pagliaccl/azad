@@ -212,7 +212,165 @@ class RequestScheduler {
         );
     }
 
+
     _sendOne(
+        url: any,
+        event_converter: (evt: any) => any,
+        success_callback: (converted_event: any, query: string) => void,
+        failure_callback: (query: string) => void,
+        nocache: boolean
+    ) {
+        if (!Array.isArray(url)){
+            // console.warn('single_url accepted')
+            return this._sendOne_original(
+                url, 
+                event_converter, 
+                success_callback,
+                failure_callback,
+                nocache
+            )
+
+        } else{ 
+            // console.warn('list_url accepted')
+            return this._sendOne_list(
+                url, 
+                event_converter, 
+                success_callback,
+                failure_callback,
+                nocache
+            )
+        }
+
+    }
+
+
+    _sendOne_list(
+    url: string[],
+    event_converter: (evt: any) => any,
+    success_callback: (converted_event: any, query: string) => void,
+    failure_callback: (query: string) => void,
+    nocache: boolean
+    ) {
+        this.running_count += 1        
+        this._update_statistics();
+
+        let converted_total: any[] = [];
+        let failed_count = 0;
+        let sit_1 = 0;
+        let sit_2 = 0;
+        let sit_3 = 0;
+        let sit_4 = 0;
+        for (let i in url) {
+            const req = new XMLHttpRequest();
+            req.open('GET', i, true);
+            // req.onerror = (): void =>  {
+            //     if (!signin.checkTooManyRedirects(i, req) ) {
+            //         console.log( 'Unknown error fetching ' + i );
+            //     }
+            //     failed_count += 1
+            // };
+            req.onerror = (): void =>  {
+                converted_total.push('error: ' + i)
+            };
+
+            req.onload = (evt: any): void => {
+                // if (!this.live) {
+                //     // situation 1
+                //     sit_1 += 1
+                //     return;
+                // }
+                // if (  != 200 && req.status != 404) {
+                //     // situation 2 
+                //     console.warn(
+                //         'Got HTTP' + req.status + ' fetching ' + url);
+                //     sit_2 +=1
+                //     return;
+                // }
+                // if ( req.responseURL.includes('/signin?') ) {
+                //     // situation 3
+                //     console.log('Got sign-in redirect from: ' + url);
+                //     if ( !this.signin_warned ) {
+                //         signin.alertPartiallyLoggedOutAndOpenLoginTab(url);
+                //         this.signin_warned = true;
+                //     }
+                //     return;
+                // }
+                // // success 
+                // if (req.status == 404) {
+                //     console.warn(
+                //         'Got HTTP' + req.status + ' fetching ' + url);
+                //     converted_total.push('404: ' + url);
+                //     return;
+                // }
+
+                converted_total.push(req.status + ': '+ url);
+
+                // console.log(
+                //   'Finished ' + url +
+                //     ' with queue size ' + this.queue.size());
+                // const converted = event_converter(evt);
+                // converted_total.push(converted);
+
+                // if (!nocache) {
+                //     this.cache.set(i, converted);
+                // }
+                
+            };
+
+            req.timeout = 20000;  // 20 seconds
+            req.ontimeout = (evt: any): void => {
+                if (!this.live) {
+                    sit_4 += 1
+                    return;
+                }
+                console.log('Timed out while fetching: ' + url);
+                sit_4 += 1
+                this._checkDone();
+            };
+
+            req.send()
+          
+        };
+
+        if (failed_count) {
+            this.running_count -= 1;
+            this.error_count += 1;
+            this._update_statistics();
+            this._checkDone();
+        }
+
+        else if (sit_1 + sit_2 + sit_3 + sit_4 ){
+            this.error_count += 1;
+            this.running_count -= 1;
+            this._update_statistics();
+        }
+
+        else {
+            success_callback(converted_total, url);
+            this._recordSingleSuccess();
+        }
+
+        // if (sit_1){
+        //     this.running_count -= 1;
+        //     this._update_statistics();
+        // }
+
+        // if (sit_2){
+        //     this.error_count += 1;
+        //     this.running_count -= 1;
+        //     this._update_statistics();
+        // }
+
+        // if (sit_3){
+        //     this.error_count += 1;
+        //     this.running_count -= 1;
+        //     this._update_statistics();
+        // }
+                    
+    }
+
+
+    _sendOne_original(
         url: string,
         event_converter: (evt: any) => any,
         success_callback: (converted_event: any, query: string) => void,
@@ -283,6 +441,7 @@ class RequestScheduler {
         this._update_statistics();
         req.send();
     }
+
 
     _executeSomeIfPossible() {
         while (this.running_count < this.CONCURRENCY &&

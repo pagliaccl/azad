@@ -409,6 +409,7 @@ export interface IOrder {
     gst(): Promise<string>;
     pst(): Promise<string>;
     refund(): Promise<string>;
+    shipmentId(): Promise<Items>;
     who(): Promise<string>;
 
     assembleDiagnostics(): Promise<Record<string,any>>;
@@ -452,6 +453,12 @@ class Order {
     payments(): Promise<string[]> {
         return util.defaulted(
             this.impl.payments_promise,
+            Promise.resolve([])
+        );
+    }
+    shipmentId(): Promise<string[]> {
+        return util.defaulted(
+            this.impl.shipments_promise,
             Promise.resolve([])
         );
     }
@@ -501,6 +508,7 @@ class OrderImpl {
     list_url: string|null;
     detail_url: string|null;
     payments_url: string|null;
+    shipmentId: any; 
     invoice_url: string|null;
     date: string|null;
     total: string|null;
@@ -508,6 +516,7 @@ class OrderImpl {
     detail_promise: Promise<IOrderDetails>|null;
     items: Items|null;
     payments_promise: Promise<string[]>|null;
+    shipments_promise: Promise<string[]>|null;
     scheduler: request_scheduler.IRequestScheduler;
 
     constructor(
@@ -520,6 +529,7 @@ class OrderImpl {
         this.list_url = src_query;
         this.detail_url = null;
         this.payments_url = null;
+        this.shipmentId = null;
         this.invoice_url = null;
         this.date = null;
         this.total = null;
@@ -527,6 +537,7 @@ class OrderImpl {
         this.detail_promise = null;
         this.items = null;
         this.payments_promise = null;
+        this.shipments_promise = null;
         this.scheduler = scheduler;
         this._extractOrder(ordersPageElem);
     }
@@ -614,6 +625,38 @@ class OrderImpl {
             throw error;
         }
 
+        try {
+            // this.shipmentId = [
+            //     ...Array.prototype.slice.call(elem.getElementsByTagName('a'))
+            // ].filter( el => el.hasAttribute('href') )
+            //  .map( el => el.getAttribute('href') )
+            //  .map( href => href.match(/.*&shipmentId=([a-zA-Z0-9-]*).*/))
+            //  .filter(x => x)
+            //  .map(x => x[1]);
+            //  this.shipmentId  = [...new Set(this.shipmentId)];
+            this.shipmentId = [
+                ...Array.prototype.slice.call(elem.getElementsByTagName('a'))
+            ].filter( el => el.hasAttribute('href') )
+             .map( el => el.getAttribute('href') )
+             .map( href => href.match(/.*progress-tracker.*/))
+             .filter(x => x);
+
+             if (this.shipmentId){
+                this.shipmentId = this.shipmentId
+                .map(x => x[0])
+                .map(x => 'https://www.amazon.com' + x);
+                this.shipmentId  = [...new Set(this.shipmentId)];
+             }
+             console.warn(this.shipmentId)
+
+        } catch (error) {
+            console.warn(
+                'could not parse order id from order list page ' + this.list_url
+            );
+            this.id = 'UNKNOWN_ORDER_ID';
+            throw error;
+        }
+
         this.site = function(o: OrderImpl) {
             if (o.list_url) {
                 const list_url_match = o.list_url.match(
@@ -645,6 +688,7 @@ class OrderImpl {
                 elem, this.id, this.site
             );
             this.payments_url = urls.getOrderPaymentUrl(this.id, this.site);
+            // this.shipmentId = urls.getShippingUrl(this.id, this.shipmentId, this.site)
         }
 
         this.items = getItems(elem);
@@ -684,6 +728,49 @@ class OrderImpl {
                         }
                     }
                 }
+            ).bind(this)
+        );
+        this.shipments_promise = new Promise<string[]>(
+            (
+                (
+                    resolve: (shipments: string[]) => void,
+                    reject: (msg: string) => void
+                ) => 
+                    {  
+                        if (this.id?.startsWith('D')) {
+                            resolve([
+                                this.total ?
+                                    util.defaulted(this.date, '') + 
+                                    ': ' + util.defaulted(this.total, '') :
+                                    util.defaulted(this.date, '')
+                            ]);
+                        } else {
+                            const event_converter = function(evt: any) {
+                                return evt.target.responseText;
+                                // var ret = evt.target.responseText.match(/Tracking ID: ([a-zA-Z0-9-]*)</);
+                                // if (ret) {
+                                //     ret = ret[1];
+                                // } else {
+                                //     ret = 'Not Shipped';
+                                // }
+                                // console.log(ret);
+                                // return ret;
+                            }.bind(this);
+                            if (this.shipmentId) {
+                                this.scheduler.scheduleToPromise<string[]>(
+                                    this.shipmentId,
+                                    event_converter,
+                                    util.defaulted(this.id, '9999'), // priority
+                                    false  // nocache
+                                ).then(
+                                    (response: {result: string[]}) => resolve(response.result),
+                                    (url: string) => reject( 'timeout or other error while fetching ' + url )
+                                );
+                            } else {
+                                reject('cannot fetch payments without payments_url');
+                            }
+                        }                               
+                    }   
             ).bind(this)
         );
     }

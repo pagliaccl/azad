@@ -63,3 +63,15 @@ export function getOrderPaymentUrl(orderId: string, site: string) {
             '/ref=oh_aui_ajax_pi?ie=UTF8&orderID=' + orderId;
 }
 
+export function getShippingUrl(orderId: string, shipmentId: Array, site: string) {
+    if ( !orderId ) {return ['N/A']; }
+    if ( !shipmentId ) {return ['N/A']; }
+    return shipmentId.map( x => 
+        'https://' + site + 
+        '/progress-tracker/package/ref=ppx_yo_dt_b_track_package?_encoding=UTF8&orderId=' + 
+        orderId + 
+        '&packageIndex=0&shipmentId='+
+        x + '&vt=YOUR_ORDERS');
+}
+
+

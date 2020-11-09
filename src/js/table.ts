@@ -179,6 +179,11 @@ const COLS: Record<string, any>[] = [
         is_numeric: false
     },
     {
+        field_name: 'shipmentId',
+        value_promise_func: 'shipmentId',
+        is_numeric: false
+    },
+    {
         field_name: 'invoice',
         render_func: (order: azad_order.IOrder, td: HTMLElement) => {
             return order.invoice_url().then( url => {
