@@ -554,44 +554,83 @@ class OrderImpl {
         this._extractOrder(ordersPageElem);
     }
     _extractOrder(elem: HTMLElement) {
+//         const getItems = function(elem: HTMLElement): Items {
+//             /*
+//               <a class="a-link-normal" href="/gp/product/B01NAE8AW4/ref=oh_aui_d_detailpage_o01_?ie=UTF8&amp;psc=1">
+//                   The Rise and Fall of D.O.D.O.
+//               </a>
+//               or
+//               <a class="a-link-normal" href="/gp/product/B06X9BZNDM/ref=oh_aui_d_detailpage_o00_?ie=UTF8&amp;psc=1">
+//                   Provenance
+//               </a>
+//               but a-link-normal is more common than this, so we need to match on gp/product
+//               like this: .//div[@class="a-row"]/a[@class="a-link-normal"][contains(@href,"/gp/product/")]
+//               then we get:
+//                   name from contained text
+//                   link from href attribute
+//                   item: not sure what we use this for - will it still work?
+//             */
+//             const itemResult: Node[] = util.findMultipleNodeValues(
+// // Note, some items don't have title= links, and some don't have links which contain '/gp/product/'. See D01-9406277-3414619. Confirming "a-row" seems to be enough.
+// //                './/div[@class="a-row"]/a[@class="a-link-normal"][contains(@href,"/gp/product/")]',
+//                 './/div[@class="a-row"]/a[@class="a-link-normal"]',
+//                 elem
+//             );
+//             const items: Items = {};
+//             itemResult.forEach(
+//                 (node: Node) => {
+//                     const item: HTMLElement = <HTMLElement>node;
+//                     const name = item.innerHTML
+//                                      .replace(/[\n\r]/g, " ")
+//                                      .replace(/  */g, " ")
+//                                      .replace(/&amp;/g, "&")
+//                                      .replace(/&nbsp;/g, " ")
+//                                      .trim();
+//                     const link = util.defaulted(item.getAttribute('href'), '');
+//                     items[name] = link;
+//                 }
+//             );
+//             return items;
+//         };
+
         const getItems = function(elem: HTMLElement): Items {
-            /*
-              <a class="a-link-normal" href="/gp/product/B01NAE8AW4/ref=oh_aui_d_detailpage_o01_?ie=UTF8&amp;psc=1">
-                  The Rise and Fall of D.O.D.O.
-              </a>
-              or
-              <a class="a-link-normal" href="/gp/product/B06X9BZNDM/ref=oh_aui_d_detailpage_o00_?ie=UTF8&amp;psc=1">
-                  Provenance
-              </a>
-              but a-link-normal is more common than this, so we need to match on gp/product
-              like this: .//div[@class="a-row"]/a[@class="a-link-normal"][contains(@href,"/gp/product/")]
-              then we get:
-                  name from contained text
-                  link from href attribute
-                  item: not sure what we use this for - will it still work?
-            */
-            const itemResult: Node[] = util.findMultipleNodeValues(
-// Note, some items don't have title= links, and some don't have links which contain '/gp/product/'. See D01-9406277-3414619. Confirming "a-row" seems to be enough.
-//                './/div[@class="a-row"]/a[@class="a-link-normal"][contains(@href,"/gp/product/")]',
-                './/div[@class="a-row"]/a[@class="a-link-normal"]',
-                elem
-            );
-            const items: Items = {};
-            itemResult.forEach(
-                (node: Node) => {
-                    const item: HTMLElement = <HTMLElement>node;
-                    const name = item.innerHTML
-                                     .replace(/[\n\r]/g, " ")
-                                     .replace(/  */g, " ")
-                                     .replace(/&amp;/g, "&")
-                                     .replace(/&nbsp;/g, " ")
-                                     .trim();
-                    const link = util.defaulted(item.getAttribute('href'), '');
-                    items[name] = link;
-                }
-            );
-            return items;
-        };
+                    /*
+                      <a class="a-link-normal" href="/gp/product/B01NAE8AW4/ref=oh_aui_d_detailpage_o01_?ie=UTF8&amp;psc=1">
+                          The Rise and Fall of D.O.D.O.
+                      </a>
+                      or
+                      <a class="a-link-normal" href="/gp/product/B06X9BZNDM/ref=oh_aui_d_detailpage_o00_?ie=UTF8&amp;psc=1">
+                          Provenance
+                      </a>
+                      but a-link-normal is more common than this, so we need to match on gp/product
+                      like this: .//div[@class="a-row"]/a[@class="a-link-normal"][contains(@href,"/gp/product/")]
+                      then we get:
+                          name from contained text
+                          link from href attribute
+                          item: not sure what we use this for - will it still work?
+                    */
+                    const itemResult: Node[] = util.findMultipleNodeValues(
+        // Note, some items don't have title= links, and some don't have links which contain '/gp/product/'. See D01-9406277-3414619. Confirming "a-row" seems to be enough.
+        //                './/div[@class="a-row"]/a[@class="a-link-normal"][contains(@href,"/gp/product/")]',
+                        './/div[@class="a-row"]/a[@class="a-link-normal"]',
+                        elem
+                    );
+                    const items: string[] = [];
+                    itemResult.forEach(
+                        (node: Node) => {
+                            const item: HTMLElement = <HTMLElement>node;
+                            const name = item.innerHTML
+                                             .replace(/[\n\r]/g, " ")
+                                             .replace(/  */g, " ")
+                                             .replace(/&amp;/g, "&")
+                                             .replace(/&nbsp;/g, " ")
+                                             .trim();
+                            // const link = util.defaulted(item.getAttribute('href'), '');
+                            items.push(name);
+                        }
+                    );
+                    return items.join(';');
+                };
 
         const doc = elem.ownerDocument;
         this.date = date.normalizeDateString(
@@ -668,31 +707,58 @@ class OrderImpl {
             ...Array.prototype.slice.call(elem.getElementsByClassName('item-view-left-col-inner'))
         ].map(x => quantity_helper(x));
 
+        // try {
+        //     this.shipmentId = [
+        //         ...Array.prototype.slice.call(elem.getElementsByTagName('a'))
+        //     ].filter( el => el.hasAttribute('href') )
+        //      .map( el => el.getAttribute('href') )
+        //      .map( href => href.match(/.*progress-tracker.*/))
+        //      .filter(x => x);
 
+        //      if (this.shipmentId){
+        //         this.shipmentId = this.shipmentId
+        //         .map(x => x[0])
+        //         .map(x => 'https://www.amazon.com' + x);
+        //         this.shipmentId  = [...new Set(this.shipmentId)];
+        //      }
+        //      // console.warn(this.shipmentId)
 
-        try {
-            this.shipmentId = [
-                ...Array.prototype.slice.call(elem.getElementsByTagName('a'))
-            ].filter( el => el.hasAttribute('href') )
-             .map( el => el.getAttribute('href') )
-             .map( href => href.match(/.*progress-tracker.*/))
-             .filter(x => x);
+        // } catch (error) {
+        //     console.warn(
+        //         'could not parse order id from order list page ' + this.list_url
+        //     );
+        //     this.id = 'UNKNOWN_ORDER_ID';
+        //     throw error;
+        // }
 
-             if (this.shipmentId){
-                this.shipmentId = this.shipmentId
+        const shipment_helper = function(x) {
+            var ret = [...Array.prototype.slice.call(x.getElementsByTagName('a')) ]
+                .filter( el => el.hasAttribute('href') )
+                .map( el => el.getAttribute('href') )
+                .map( href => href.match(/.*progress-tracker.*/))
+                .filter(x => x)
                 .map(x => x[0])
                 .map(x => 'https://www.amazon.com' + x);
-                this.shipmentId  = [...new Set(this.shipmentId)];
-             }
-             // console.warn(this.shipmentId)
 
-        } catch (error) {
-            console.warn(
-                'could not parse order id from order list page ' + this.list_url
-            );
-            this.id = 'UNKNOWN_ORDER_ID';
-            throw error;
-        }
+            ret = [...new Set(ret)];
+
+            if (ret.length){
+                ret = ret[0]
+            } else{
+                ret = 'Not Shipped'
+            }
+
+            return ret
+
+        };
+
+        var tmp = [
+            ...Array.prototype.slice.call(elem.getElementsByClassName('a-box-inner'))
+        ];
+        tmp.shift();
+        tmp.pop();
+
+        this.shipmentId = tmp.map(x=> shipment_helper(x));
 
         this.site = function(o: OrderImpl) {
             if (o.list_url) {
@@ -795,7 +861,7 @@ class OrderImpl {
                                         // console.log(ret);
                                         return ret;
                                     }.bind(this);
-                                    if (x) {
+                                    if (x && x!='Not Shipped') {
                                         this.scheduler.scheduleToPromise<string[]>(
                                             x,
                                             event_converter,
@@ -805,7 +871,9 @@ class OrderImpl {
                                             (response: {result: string[]}) => resolve(response.result),
                                             (url: string) => reject( 'timeout or other error while fetching ' + url )
                                         );
-                                    } else {
+                                    } else if (x == 'Not Shipped') {
+                                        resolve('Not Shipped')
+                                    } else  {
                                         reject('cannot fetch payments without payments_url');
                                     }
                                 }                               

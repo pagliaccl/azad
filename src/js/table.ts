@@ -67,27 +67,33 @@ const COLS: Record<string, any>[] = [
             ),
         is_numeric: false
     },
+    // {
+    //     field_name: 'items',
+    //     render_func: (order: azad_order.IOrder, td: HTMLElement) => 
+    //         order.items().then( items => {
+    //             const ul = td.ownerDocument!.createElement('ul');
+    //             for(let title in items) {
+    //                 if (Object.prototype.hasOwnProperty.call(items, title)) {
+    //                     const li = td.ownerDocument!.createElement('li');
+    //                     ul.appendChild(li);
+    //                     const a = td.ownerDocument!.createElement('a');
+    //                     li.appendChild(a);
+    //                     a.textContent = title + '; ';
+    //                     a.href = items[title];
+    //                 }
+    //             }
+    //             td.textContent = '';
+    //             td.appendChild(ul);
+    //             return null;
+    //         }),
+    //     is_numeric: false
+    // },
     {
         field_name: 'items',
-        render_func: (order: azad_order.IOrder, td: HTMLElement) => 
-            order.items().then( items => {
-                const ul = td.ownerDocument!.createElement('ul');
-                for(let title in items) {
-                    if (Object.prototype.hasOwnProperty.call(items, title)) {
-                        const li = td.ownerDocument!.createElement('li');
-                        ul.appendChild(li);
-                        const a = td.ownerDocument!.createElement('a');
-                        li.appendChild(a);
-                        a.textContent = title + '; ';
-                        a.href = items[title];
-                    }
-                }
-                td.textContent = '';
-                td.appendChild(ul);
-                return null;
-            }),
+        value_promise_func: 'items',
         is_numeric: false
     },
+
     {
         field_name: 'quantity',
         value_promise_func: 'quantity',
