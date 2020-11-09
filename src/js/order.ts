@@ -647,7 +647,7 @@ class OrderImpl {
                 .map(x => 'https://www.amazon.com' + x);
                 this.shipmentId  = [...new Set(this.shipmentId)];
              }
-             console.warn(this.shipmentId)
+             // console.warn(this.shipmentId)
 
         } catch (error) {
             console.warn(
@@ -730,48 +730,52 @@ class OrderImpl {
                 }
             ).bind(this)
         );
-        this.shipments_promise = new Promise<string[]>(
-            (
-                (
-                    resolve: (shipments: string[]) => void,
-                    reject: (msg: string) => void
-                ) => 
-                    {  
-                        if (this.id?.startsWith('D')) {
-                            resolve([
-                                this.total ?
-                                    util.defaulted(this.date, '') + 
-                                    ': ' + util.defaulted(this.total, '') :
-                                    util.defaulted(this.date, '')
-                            ]);
-                        } else {
-                            const event_converter = function(evt: any) {
-                                return evt.target.responseText;
-                                // var ret = evt.target.responseText.match(/Tracking ID: ([a-zA-Z0-9-]*)</);
-                                // if (ret) {
-                                //     ret = ret[1];
-                                // } else {
-                                //     ret = 'Not Shipped';
-                                // }
-                                // console.log(ret);
-                                // return ret;
-                            }.bind(this);
-                            if (this.shipmentId) {
-                                this.scheduler.scheduleToPromise<string[]>(
-                                    this.shipmentId,
-                                    event_converter,
-                                    util.defaulted(this.id, '9999'), // priority
-                                    false  // nocache
-                                ).then(
-                                    (response: {result: string[]}) => resolve(response.result),
-                                    (url: string) => reject( 'timeout or other error while fetching ' + url )
-                                );
-                            } else {
-                                reject('cannot fetch payments without payments_url');
-                            }
-                        }                               
-                    }   
-            ).bind(this)
+        this.shipments_promise = Promise.all(
+            this.shipmentId.map( x =>
+                new Promise<string[]>(
+                    (
+                        (
+                            resolve: (shipments: string[]) => void,
+                            reject: (msg: string) => void
+                        ) => 
+                            {  
+                                if (this.id?.startsWith('D')) {
+                                    resolve([
+                                        this.total ?
+                                            util.defaulted(this.date, '') + 
+                                            ': ' + util.defaulted(this.total, '') :
+                                            util.defaulted(this.date, '')
+                                    ]);
+                                } else {
+                                    const event_converter = function(evt: any) {
+                                        // return evt.target.responseText;
+                                        var ret = evt.target.responseText.match(/Tracking ID: ([a-zA-Z0-9-]*)</);
+                                        if (ret) {
+                                            ret = ret[1];
+                                        } else {
+                                            ret = 'Not Shipped';
+                                        }
+                                        // console.log(ret);
+                                        return ret;
+                                    }.bind(this);
+                                    if (x) {
+                                        this.scheduler.scheduleToPromise<string[]>(
+                                            x,
+                                            event_converter,
+                                            util.defaulted(this.id, '9999'), // priority
+                                            false  // nocache
+                                        ).then(
+                                            (response: {result: string[]}) => resolve(response.result),
+                                            (url: string) => reject( 'timeout or other error while fetching ' + url )
+                                        );
+                                    } else {
+                                        reject('cannot fetch payments without payments_url');
+                                    }
+                                }                               
+                            }   
+                    ).bind(this)
+                );
+            )
         );
     }
 

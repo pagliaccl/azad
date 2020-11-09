@@ -161,7 +161,7 @@ class RequestScheduler {
         if (typeof(cached_response) !== 'undefined') {
             this._pretendToSendOne(query, protected_callback, cached_response);
         } else {
-            this._sendOne(
+            this._sendOne_original(
                 query,
                 protected_converter,
                 protected_callback,
