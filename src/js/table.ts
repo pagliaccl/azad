@@ -89,6 +89,11 @@ const COLS: Record<string, any>[] = [
         is_numeric: false
     },
     {
+        field_name: 'quantity',
+        value_promise_func: 'quantity',
+        is_numeric: false
+    },
+    {
         field_name: 'to',
         value_promise_func: 'who',
         is_numeric: false

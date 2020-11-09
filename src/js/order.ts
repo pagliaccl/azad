@@ -656,6 +656,20 @@ class OrderImpl {
             throw error;
         }
 
+        const quantity_helper = function(x) {
+            var ret = x.getElementsByClassName('item-view-qty')
+            if (ret.length) {
+                ret = ret[0].textContent.trim()
+            } else {ret = 1}
+            return ret
+        };
+
+        this.quantity = [
+            ...Array.prototype.slice.call(elem.getElementsByClassName('item-view-left-col-inner'))
+        ].map(x => quantity_helper(x));
+
+
+
         try {
             this.shipmentId = [
                 ...Array.prototype.slice.call(elem.getElementsByTagName('a'))
