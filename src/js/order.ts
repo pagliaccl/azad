@@ -400,6 +400,8 @@ export interface IOrder {
     date(): Promise<string>;
     total(): Promise<string>;
     who(): Promise<string>;
+    address(): Promise<string>;
+    quantity(): Promise<string>;
     items(): Promise<Items>;
     payments(): Promise<any>;
     postage(): Promise<string>;
@@ -446,6 +448,12 @@ class Order {
     }
     who(): Promise<string> {
         return Promise.resolve(util.defaulted(this.impl.who, ''));
+    }
+    address(): Promise<string> {
+        return Promise.resolve(util.defaulted(this.impl.address, ''));
+    }
+    quantity(): Promise<string> {
+        return Promise.resolve(util.defaulted(this.impl.quantity, ''));
     }
     items(): Promise<Items> {
         return Promise.resolve(util.defaulted(this.impl.items, {}));
@@ -509,6 +517,8 @@ class OrderImpl {
     detail_url: string|null;
     payments_url: string|null;
     shipmentId: any; 
+    address: any;
+    quantity: any;
     invoice_url: string|null;
     date: string|null;
     total: string|null;
@@ -530,6 +540,8 @@ class OrderImpl {
         this.detail_url = null;
         this.payments_url = null;
         this.shipmentId = null;
+        this.address=null;
+        this.quantity=null;
         this.invoice_url = null;
         this.date = null;
         this.total = null;
@@ -580,6 +592,7 @@ class OrderImpl {
             );
             return items;
         };
+
         const doc = elem.ownerDocument;
         this.date = date.normalizeDateString(
             util.defaulted(
@@ -626,14 +639,24 @@ class OrderImpl {
         }
 
         try {
-            // this.shipmentId = [
-            //     ...Array.prototype.slice.call(elem.getElementsByTagName('a'))
-            // ].filter( el => el.hasAttribute('href') )
-            //  .map( el => el.getAttribute('href') )
-            //  .map( href => href.match(/.*&shipmentId=([a-zA-Z0-9-]*).*/))
-            //  .filter(x => x)
-            //  .map(x => x[1]);
-            //  this.shipmentId  = [...new Set(this.shipmentId)];
+            var address_html_str = [
+                ...Array.prototype.slice.call(elem.getElementsByTagName('span'))
+            ].filter( el => el.hasAttribute('data-a-popover') )
+             .map(x => x.getAttribute('data-a-popover'))[0];
+
+            var div = document.createElement('div');
+            div.innerHTML = JSON.parse(address_html_str)['inlineContent'];
+            this.address = div.getElementsByClassName('displayAddressLI displayAddressAddressLine1')[0].outerText;
+
+        } catch (error) {
+            console.warn(
+                'could not parse address from order list page ' + this.list_url
+            );
+            this.address = 'UNKNOWN_ADDRESS';
+            throw error;
+        }
+
+        try {
             this.shipmentId = [
                 ...Array.prototype.slice.call(elem.getElementsByTagName('a'))
             ].filter( el => el.hasAttribute('href') )

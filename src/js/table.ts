@@ -94,6 +94,11 @@ const COLS: Record<string, any>[] = [
         is_numeric: false
     },
     {
+        field_name: 'address',
+        value_promise_func: 'address',
+        is_numeric: false
+    },
+    {
         field_name: 'date',
         value_promise_func: 'date',
         is_numeric: false,
@@ -179,7 +184,7 @@ const COLS: Record<string, any>[] = [
         is_numeric: false
     },
     {
-        field_name: 'shipmentId',
+        field_name: 'trackings',
         value_promise_func: 'shipmentId',
         is_numeric: false
     },
