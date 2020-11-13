@@ -629,7 +629,7 @@ class OrderImpl {
                             items.push(name);
                         }
                     );
-                    return items.join(';');
+                    return items.join('\t');
                 };
 
         const doc = elem.ownerDocument;
