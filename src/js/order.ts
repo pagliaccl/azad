@@ -101,6 +101,14 @@ function extractDetailFromDoc(
         return util.defaulted(order.date, '');
     };
 
+    // const total = function(): string {
+    //     let a = getField(
+    //         '//span[contains(text(),"Grand Total:")]/../../div[2]/span/text()',
+    //         doc.documentElement
+    //     );
+    //     return util.defaulted(a, '');
+    // };
+
     const total = function(): string {
         const a = extraction.by_regex(
             [
@@ -443,9 +451,9 @@ class Order {
     date(): Promise<string> {
         return Promise.resolve(util.defaulted(this.impl.date, ''));
     }
-    total(): Promise<string> {
-        return Promise.resolve(util.defaulted(this.impl.total, ''));
-    }
+    // total(): Promise<string> {
+    //     return Promise.resolve(util.defaulted(this.impl.total, ''));
+    // }
     who(): Promise<string> {
         return Promise.resolve(util.defaulted(this.impl.who, ''));
     }
@@ -478,6 +486,10 @@ class Order {
             return this.impl.detail_promise.then( detail_lambda );
         }
         return Promise.resolve('');
+    }
+
+    total(): Promise<string> {
+        return this._detail_dependent_promise( detail => detail.total );
     }
 
     postage(): Promise<string> {
@@ -962,7 +974,7 @@ function getOrdersForYearAndQueryTemplate(
             throw(msg);
         }
         // const expected_order_count: number = parseInt( splits[0], 10 );
-        const expected_order_count: number = Math.min(parseInt( splits[0], 10 ), 100);
+        const expected_order_count: number = Math.min(parseInt( splits[0], 10 ), 200);
         console.log(
             'Found ' + expected_order_count + ' orders for ' + year
         );
